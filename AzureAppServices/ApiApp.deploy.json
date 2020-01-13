@@ -1,0 +1,165 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apiAppName": {
+            "defaultValue": "apiapp",
+            "type": "String"
+        },
+		"location": {
+			"defaultValue": "[resourceGroup().location]",
+            "type": "String"
+		},
+        "storageName": {
+            "defaultValue": "",
+            "type": "String"
+        },
+		"appInsightName": {
+			"defaultValue": "",
+            "type": "String"
+		},
+		"servicePlanName": {
+			"defaultValue": "",
+            "type": "String"
+		},
+		 "hostingEnvironment": {
+            "defaultValue": "",
+            "type": "String"
+        },
+        "skuCode": {
+            "defaultValue": "S1",
+            "type": "String"
+        },
+        "sku": {
+            "defaultValue": "Standard",
+            "allowedValues": [
+                "Free",
+                "Shared",
+                "Basic",
+                "Standard"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "The pricing tier for the hosting plan."
+            }
+        },
+        "workerSize": {
+            "defaultValue": "0",
+            "allowedValues": [
+                "0",
+                "1",
+                "2"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "The instance size of the hosting plan (small, medium, or large)."
+            }
+        },
+        "serverFarmResourceGroup": {
+            "defaultValue": "[resourceGroup().name]",
+            "type": "String"
+        },
+		"kind":{
+			"defaultValue": "api",
+            "type": "String"
+		},
+		"slots":{
+			"defaultValue": ["Staging"],
+			"type": "array",
+		    "metadata": {
+        "description": "Slots to add along with App."
+		}
+		}
+    },
+
+    "resources": [
+	        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2016-09-01",
+            "name": "[parameters('servicePlanName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "Tier": "[parameters('sku')]",
+                "Name": "[parameters('skuCode')]"
+            },
+            "properties": {
+                "name": "[parameters('servicePlanName')]",
+                "workerSizeId": "[parameters('workerSize')]",
+                "reserved": false,
+                "numberOfWorkers": "1",
+                "hostingEnvironment": "[parameters('hostingEnvironment')]",
+                "dependsOn": [
+                    "[resourceId('Microsoft.Insights/components', parameters('appInsightName'))]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2016-03-01",
+            "name": "[parameters('apiAppName')]",
+            "location": "[parameters('location')]",
+            "kind": "[parameters('kind')]",
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('servicePlanName'))]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('storageName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageName')),'2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~2"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('storageName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageName')),'2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[concat(toLower(parameters('apiAppName')), 'b810')]"
+                        },
+                        {
+                            "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                            "value": "10.14.1"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightName')), '2014-04-01').InstrumentationKey]"
+                        }
+                    ]
+                },
+                "name": "[parameters('apiAppName')]",
+                "clientAffinityEnabled": false,
+                "reserved": false,
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('servicePlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageName'))]",
+                "[resourceId('Microsoft.Insights/components', parameters('appInsightName'))]"
+            ]
+            }
+        },
+		{
+      "apiVersion": "2016-08-01",
+      "type": "Microsoft.Web/sites/slots",
+      "name": "[concat(parameters('apiAppName'), '/', parameters('slots')[copyIndex()])]",
+      "kind": "[parameters('kind')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('servicePlanName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/Sites', parameters('apiAppName'))]"
+      ],
+      "copy": {
+        "name": "webPortalSlot",
+        "count": "[length(parameters('slots'))]"
+      }
+    }
+		
+    ]
+}

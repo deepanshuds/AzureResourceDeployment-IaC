@@ -1,0 +1,34 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"appInsightName": {
+			"defaultValue": ["analytics-appinsight","backendapi-appinsight","backendfunc-appinsight","frontend-appinsight","ingestion-appinsight","psr-appinsight"],
+			"type": "Array",
+            "metadata": {
+                "description": "List of application Insight names to be created."
+            }
+		}
+	},
+
+	"variables": {
+		"environmentPrefix": "[substring(resourceGroup().name, 0, 7)]",
+		"environmentSuffix": "[substring(resourceGroup().name, 6, 6)]"
+	},
+
+	"resources": [{
+		"apiVersion": "2014-04-01",
+		"copy": {
+			"name": "functionApp",
+			"count": "[length(parameters('appInsightName'))]"
+		},
+		"name": "[toLower(concat(variables('environmentPrefix'),parameters('appInsightName')[copyIndex()],variables('environmentSuffix')))]",
+		"type": "Microsoft.Insights/components",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"ApplicationId": "[toLower(concat(variables('environmentPrefix'),parameters('appInsightName')[copyIndex()],variables('environmentSuffix')))]"
+		}
+	}],
+	"outputs": {
+	}
+}

@@ -1,0 +1,44 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"location": {
+			"defaultValue": "[resourceGroup().location]",
+            "type": "String"
+		},	
+
+		"ServiceBusName": {
+			"defaultValue": "",
+			"type": "Array",
+            "metadata": {
+                "description": "List of Service bus Names to be created."
+            }
+		},
+		"sku": {
+			"allowedValues": ["Basic", "Standard", "Premium"],
+			"defaultValue": "Standard",
+			"type": "String"
+		}
+	},
+
+	"variables": {
+		"apiVersion": "2017-04-01",
+		"environmentPrefix": "[substring(resourceGroup().name, 0, 7)]",
+		"environmentSuffix": "[substring(resourceGroup().name, 6, 6)]"
+	},
+	"resources": [{
+		"apiVersion": "[variables('apiVersion')]",
+		"copy": {
+			"name": "functionApp",
+			"count": "[length(parameters('ServiceBusName'))]"
+		},
+		"name": "[toLower(concat(variables('environmentPrefix'),parameters('ServiceBusName')[copyIndex()],variables('environmentSuffix')))]",
+		"type": "Microsoft.ServiceBus/namespaces",
+		"location": "[parameters('location')]",
+		"sku": {
+			"name": "[parameters('sku')]"
+		},
+		"properties": {}
+	}],
+	"outputs": {}
+}

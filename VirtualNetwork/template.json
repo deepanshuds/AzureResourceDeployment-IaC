@@ -1,0 +1,227 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"nsgResourceGroupName": {
+			"type": "string",
+			"defaultValue": "-RG-Security"
+		},
+		"Location": {
+			"type": "string",
+			"defaultValue": "[resourceGroup().location]",
+			"allowedValues": [
+				"[resourceGroup().location]",
+				"australiaeast",
+				"australiasoutheast",
+				"brazilsouth",
+				"centralus",
+				"eastasia",
+				"eastus",
+				"eastus2",
+				"japaneast",
+				"japanwest",
+				"northcentralus",
+				"northeurope",
+				"southcentralus",
+				"southeastasia",
+				"westeurope",
+				"westus"
+			],
+			"metadata": {
+				"description": "Location of the virtual network."
+			}
+		},
+		
+		"ipRange": {
+			"type": "string",
+			"defaultValue": "10.77"
+		}
+	},
+	"variables": {
+		"vNetApiVersion": "2016-12-01",
+
+		"lastIndex": "[lastIndexOf(toLower(resourceGroup().name), '-Rg-')]",
+		"startIndex": "[add(variables('lastIndex'),4)]",
+		"totalLength": "[sub(length(resourceGroup().name),variables('startIndex'))]",
+		"PrefixName": "[substring(resourceGroup().name, variables('startIndex'),variables('totalLength'))]",
+		"componentName": "[toLower(variables('PrefixName'))]",
+
+		"virtualnetworkname": "[concat(variables('componentName'),'-vnet')]",
+		"sf-subnet": "[concat(variables('componentName'),'-sf-subnet')]",
+		"import-sf-subnet": "[concat(variables('componentName'),'-import-sf-subnet')]",
+		"image-sf-subnet": "[concat(variables('componentName'),'-image-sf-subnet')]",
+		"sql01-Subnet": "[concat(variables('componentName'),'-sql01-subnet')]",
+		"sql02-Subnet": "[concat(variables('componentName'),'-sql02-subnet')]",
+		"sql03-Subnet": "[concat(variables('componentName'),'-sql03-subnet')]",
+		"01-sftp-subnet": "[concat(variables('componentName'),'-01-sftp-subnet')]",
+		"02-sftp-subnet": "[concat(variables('componentName'),'-02-sftp-subnet')]",
+		"api-subnet": "[concat(variables('componentName'),'-api-mgt-subnet')]",
+		"gw-subnet": "[concat(variables('componentName'),'-gateway-subnet')]",
+		"clickonce-subnet": "[concat(variables('componentName'),'-clickonce-subnet')]",
+		
+		
+	
+		
+		"nsgId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('nsgResourceGroupName') , '/providers/Microsoft.Network/networkSecurityGroups/')]",
+		
+
+		"addressPrefix": "[concat(parameters('ipRange'),'.8.0/21')]",
+		"sfsubnetPrefix": "[concat(parameters('ipRange'),'.8.0/24')]",
+		"importSfsubnetPrefix": "[concat(parameters('ipRange'),'.9.0/24')]",
+		"imageSfsubnetPrefix": "[concat(parameters('ipRange'),'.15.64/26')]",
+		"sql01subnetPrefix": "[concat(parameters('ipRange'),'.12.0/26')]",
+		"sql02subnetPrefix": "[concat(parameters('ipRange'),'.12.64/26')]",
+		"sql03subnetPrefix": "[concat(parameters('ipRange'),'.12.128/26')]",
+		"sftp01SubnetPrefix": "[concat(parameters('ipRange'),'.11.0/24')]",
+		"sftp02SubnetPrefix": "[concat(parameters('ipRange'),'.10.0/24')]",
+		"apisubnetPrefix": "[concat(parameters('ipRange'),'.13.0/24')]",
+		"gwsubnetPrefix": "[concat(parameters('ipRange'),'.14.0/24')]",
+		"clickOncesubnetPrefix": "[concat(parameters('ipRange'),'.15.0/26')]"
+
+	},
+	"resources": [{
+		"apiVersion": "[variables('vNetApiVersion')]",
+		"type": "Microsoft.Network/virtualNetworks",
+		"name": "[variables('virtualnetworkname')]",
+		"location": "[parameters('Location')]",
+		"dependsOn": [],
+		"properties": {
+			"addressSpace": {
+				"addressPrefixes": [
+					"[variables('addressPrefix')]"
+				]
+			},
+			"subnets": [{
+					"name": "[variables('sf-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('sfsubnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'security-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('import-sf-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('importSfsubnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'security-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('image-sf-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('imageSfsubnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'security-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('sql01-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('sql01subnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'sql-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('sql02-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('sql02subnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'sql-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('sql03-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('sql03subnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'sql-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('02-sftp-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('sftp02SubnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'sftp-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('01-sftp-subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('sftp01SubnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'sftp-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('api-Subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('apisubnetPrefix')]",
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('gw-Subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('gwsubnetPrefix')]",
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				},
+				{
+					"name": "[variables('clickonce-Subnet')]",
+					"properties": {
+						"addressPrefix": "[variables('clickOncesubnetPrefix')]",
+						 "networkSecurityGroup": {
+							"id": "[concat(variables('nsgId'),'client-nsg')]"
+						},
+						"serviceEndpoints": [{
+							"service": "Microsoft.Storage"
+						}]
+					}
+				}
+
+			]
+		},
+		"tags": {
+			"resourceType": "Virtual Network"
+		}
+	}]
+}

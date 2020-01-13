@@ -1,0 +1,82 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+		"location": {
+			"defaultValue": "[resourceGroup().location]",
+            "type": "String"
+		},
+        "storageName": {
+            "defaultValue": "",
+            "type": "String",
+            "maxLength": 11
+        },
+		"supportsHttpsTrafficOnly": {
+            "type": "bool", 
+            "defaultValue": true
+        },
+		"kind": {
+            "type": "string", 
+            "defaultValue": "StorageV2",
+			"allowedValues": ["Storage","StorageV2","BlobStorage"]
+        },
+		"storageAccountType": {
+			"type": "string",
+			"defaultValue": "Standard_LRS",
+			"allowedValues": [
+				"Standard_LRS",
+				"Standard_ZRS",
+				"Standard_GRS",
+				"Standard_RAGRS",
+				"Premium_LRS"
+			],
+			"metadata": {
+				"description": "Specifies the values of storage AccountType"
+			}
+		},
+		"accessTier": {
+            "type": "string", 
+            "defaultValue": "Hot",
+			"allowedValues": ["Hot","Cool"]
+        }
+		
+    },
+    "variables": {
+		"environmentPrefix": "[substring(resourceGroup().name, 0, 7)]",
+		"environmentSuffix": "[substring(resourceGroup().name, 6, 6)]",
+	
+		"storageName": "[toLower(replace(concat(variables('environmentPrefix'),parameters('storageName'),variables('environmentSuffix')),'-',''))]"
+    },
+    "resources": [
+        {
+            "name": "[variables('storageName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "accessTier":  "[if(not(equals(parameters('kind'), 'Storage')), parameters('accessTier'), json('null'))]",
+                "supportsHttpsTrafficOnly": "[parameters('supportsHttpsTrafficOnly')]"
+            },
+            "dependsOn": [],
+            "sku": {
+                "name": "[parameters('storageAccountType')]"
+            },
+            "kind": "[parameters('kind')]",
+            "resources": []
+        }
+    ],
+    "outputs": {
+        "storageaccountName": {
+            "type": "string",
+            "value": "[variables('storageName')]"
+        },
+        "storageaccountPrimaryKey": {
+            "type": "string",
+            "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+        },
+        "storageaccountConnectionstring": {
+            "type": "string",
+            "value": "[Concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value,';EndpointSuffix=core.windows.net')]"
+        }
+    }
+}

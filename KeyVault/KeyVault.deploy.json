@@ -1,0 +1,129 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "keyVaultName": {
+            "defaultValue": "keyvault-be",
+            "maxLength": 11,
+            "type": "String"
+        },
+        "Location": {
+            "defaultValue": "[resourceGroup().location]",
+            "type": "String",
+            "metadata": {
+                "description": "Location of the Keyvault."
+            }
+        },
+        "enableVaultForDeployment": {
+            "defaultValue": false,
+            "allowedValues": [
+                true,
+                false
+            ],
+            "type": "Bool",
+            "metadata": {
+                "description": "Specifies if the vault is enabled for a VM deployment"
+            }
+        },
+        "enabledForTemplateDeployment": {
+            "defaultValue": false,
+            "allowedValues": [
+                true,
+                false
+            ],
+            "type": "Bool",
+            "metadata": {
+                "description": "Specifies whether Azure Resource Manager is permitted to retrieve secrets from the key vault."
+            }
+        },
+        "enableVaultForDiskEncryption": {
+            "defaultValue": false,
+            "allowedValues": [
+                true,
+                false
+            ],
+            "type": "Bool",
+            "metadata": {
+                "description": "Specifies if the azure platform has access to the vault for enabling disk encryption scenarios."
+            }
+        },
+        "tenantId": {
+            "defaultValue": "[subscription().tenantId]",
+            "type": "String",
+            "metadata": {
+                "description": "Tenant Id of the subscription. Get using Get-AzureRmSubscription cmdlet or Get Subscription API"
+            }
+        },
+        "objectId": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "Object Id of the AD user. Get using Get-AzureRmADUser or Get-AzureRmADServicePrincipal cmdlets"
+            }
+        },
+        "keysPermissions": {
+            "defaultValue": [
+                "Get",
+                "List"
+            ],
+            "type": "Array",
+            "metadata": {
+                "description": "Permissions to keys in the vault. Valid values are: all, create, import, update, get, list, delete, backup, restore, encrypt, decrypt, wrapkey, unwrapkey, sign, and verify."
+            }
+        },
+        "secretsPermissions": {
+            "defaultValue": [
+                "Get",
+                "List"
+            ],
+            "type": "Array",
+            "metadata": {
+                "description": "Permissions to secrets in the vault. Valid values are: all, get, set, list, and delete."
+            }
+        },
+        "KeyVaultsku": {
+            "defaultValue": "Standard",
+            "allowedValues": [
+                "Standard",
+                "Premium"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "SKU for the vault"
+            }
+        }
+    },
+    "variables": {
+        "environmentPrefix": "[substring(resourceGroup().name, 0, 7)]",
+        "environmentSuffix": "[substring(resourceGroup().name, 6, 6)]",
+        "keyVaultName": "[toLower(concat(variables('environmentPrefix'),parameters('keyVaultName'),variables('environmentSuffix')))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "2015-06-01",
+            "name": "[variables('keyVaultName')]",
+            "location": "[parameters('Location')]",
+            "properties": {
+                "enabledForDeployment": "[parameters('enableVaultForDeployment')]",
+                "enabledForTemplateDeployment": "[parameters('enabledForTemplateDeployment')]",
+                "enabledForDiskEncryption": "[parameters('enableVaultForDiskEncryption')]",
+                "accessPolicies": [
+                    {
+                        "tenantId": "[parameters('tenantId')]",
+                        "objectId": "[parameters('objectId')]",
+                        "permissions": {
+                            "keys": "[parameters('keysPermissions')]",
+                            "secrets": "[parameters('secretsPermissions')]"
+                        }
+                    }
+                ],
+                "tenantId": "[parameters('tenantId')]",
+                "sku": {
+                    "name": "[parameters('KeyVaultsku')]",
+                    "family": "A"
+                }
+            }
+        }
+    ]
+}

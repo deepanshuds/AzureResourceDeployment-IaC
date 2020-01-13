@@ -1,0 +1,26 @@
+{
+   "devResourceGroupName": {
+		"value": "dev-RG"
+	},	
+	"devStorageAccountName": {
+		"value": "stordiagnosticsd"
+	},
+	"qaResourceGroupName": {
+		"value": "qa-RG"
+	},
+	"qaStorageAccountName": {
+		"value": "stordiagnosticsq"
+	},
+   "stgResourceGroupName": {
+		"value": "stg-RG"
+	},	
+	"stgStorageAccountName": {
+		"value": "stordiagnosticss"
+	},
+	"prodResourceGroupName": {
+		"value": "prod-RG"
+	},
+	"prodStorageAccountName": {
+		"value": "stordiagnosticsp"
+	}	
+}

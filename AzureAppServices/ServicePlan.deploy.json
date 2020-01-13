@@ -1,0 +1,78 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+"parameters": {
+		"servicePlanName": {
+            "defaultValue": "",
+            "type": "String"
+        },
+		"location": {
+			"defaultValue": "[resourceGroup().location]",
+            "type": "String"
+		},
+		"hostingEnvironment": {
+			"defaultValue": "",
+			"type": "String"
+		},
+		"skuCode": {
+			"defaultValue": "S1",
+			"type": "String"
+		},
+		"sku": {
+			"defaultValue": "Standard",
+			"allowedValues": [
+				"Free",
+				"Shared",
+				"Basic",
+				"Standard"
+			],
+			"type": "String",
+			"metadata": {
+				"description": "The pricing tier for the hosting plan."
+			}
+		},
+		"workerSize": {
+			"defaultValue": "0",
+			"allowedValues": [
+				"0",
+				"1",
+				"2"
+			],
+			"type": "String",
+			"metadata": {
+				"description": "The instance size of the hosting plan (small, medium, or large)."
+			}
+		},
+		"serverFarmResourceGroup": {
+			"defaultValue": "[resourceGroup().name]",
+			"type": "String"
+		},
+		"appInsightName": {
+			"defaultValue": "",
+            "type": "String"
+		}
+	},
+
+	"resources": [
+		{
+			"type": "Microsoft.Web/serverfarms",
+			"sku": {
+				"Tier": "[parameters('sku')]",
+				"Name": "[parameters('skuCode')]"
+			},
+			"name": "[parameters('servicePlanName')]",
+			"apiVersion": "2016-09-01",
+			"location": "[parameters('location')]",
+			"properties": {
+				"name": "[parameters('servicePlanName')]",
+				"workerSizeId": "[parameters('workerSize')]",
+				"reserved": false,
+				"numberOfWorkers": "1",
+				"hostingEnvironment": "[parameters('hostingEnvironment')]",
+				 "dependsOn": [
+                "[resourceId('Microsoft.Insights/components', parameters('appInsightName'))]"
+            ]
+			}
+		}
+		]
+}

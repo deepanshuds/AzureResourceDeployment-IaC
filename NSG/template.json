@@ -1,0 +1,234 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceGroup": {
+            "defaultValue": "-RG-SecurityTest",
+            "type": "String"
+        },
+        "location": {
+            "defaultValue": "[resourceGroup().location]",
+            "allowedValues": [
+                "[resourceGroup().location]",
+                "australiaeast",
+                "australiasoutheast",
+                "brazilsouth",
+                "centralus",
+                "eastasia",
+                "eastus",
+                "eastus2",
+                "japaneast",
+                "japanwest",
+                "northcentralus",
+                "northeurope",
+                "southcentralus",
+                "southeastasia",
+                "westeurope",
+                "westus"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "Location of the Clickonce Server VM"
+            }
+        }
+    },
+    "variables": {
+        "clientNsg": "client-nsg",
+        "securityNsg": "security-nsg",
+        "sftpNsg": "sftp-nsg",
+        "sqlNsg": "sql-nsg",
+        "rdpPortNumber": "3389",
+        "serviceFabricDeploymentPortNumber": "19000",
+        "sqlPortRange": "1433",
+        "sftpPortNumber": "22",
+        "projIp": "",
+        "logicAppIp": "",
+        "FTPaccessIp": [
+            "",
+            ""
+        ],
+        "destinationPortRanges": [
+            "80",
+            "21"
+        ],
+        "FTPPortRanges": "5000-5500",
+        "vstsIp": [
+            
+        ],
+        "ftpvstsIp": [
+            
+        ],
+        "projVstsIp": [
+           
+        ]
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('clientNsg')]",
+            "apiVersion": "2018-01-01",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "NSG - Click Once Client URL"
+            },
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "UrlAccessOnly",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefixes": "[variables('ftpvstsIp')]",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound",
+                            "destinationPortRanges": "[variables('destinationPortRanges')]"
+                        }
+                    },
+                    {
+                        "name": "HTTP",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefixes": "[variables('projVstsIp')]",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 110,
+                            "direction": "Inbound",
+                            "destinationPortRange": "[variables('FTPPortRanges')]"
+                        }
+                    },
+                    {
+                        "name": "RDPDeny",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('rdpPortNumber')]",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('sqlNsg')]",
+            "apiVersion": "2018-01-01",
+            "location": "[parameters('location')]",
+            "tags": {
+                "displayName": "NSG - SQL Server"
+            },
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "DenyRdpAccess",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('rdpPortNumber')]",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('sftpNsg')]",
+            "apiVersion": "2018-01-01",
+            "location": "[parameters('location')]",
+            "tags": {
+                "displayName": "NSG - SFTP"
+            },
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowOnlySFTPAccess",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('sftpPortNumber')]",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound",
+                            "sourceAddressPrefixes": [
+                                "[variables('logicAppIp')]",
+                                "[variables('projIp')]"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "DenyRdpAccess",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('rdpPortNumber')]",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('securityNsg')]",
+            "apiVersion": "2018-01-01",
+            "location": "[parameters('location')]",
+            "tags": {
+                "displayName": "NSG - Service Fabric"
+            },
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowOnlyForServiceFabricDeployment",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('serviceFabricDeploymentPortNumber')]",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound",
+                            "sourceAddressPrefixes": "[variables('vstsIp')]"
+                        }
+                    },
+                    {
+                        "name": "DenyRdpAccess",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "[variables('rdpPortNumber')]",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 100,
+                            "direction": "Outbound"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

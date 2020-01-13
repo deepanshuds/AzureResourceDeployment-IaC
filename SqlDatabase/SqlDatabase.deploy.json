@@ -1,0 +1,119 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+		"location": {
+			"defaultValue": "[resourceGroup().location]",
+            "type": "String"
+		},	
+        "sqlDbName": {
+			"defaultValue": "db",
+            "type": "string"
+        },
+        "sqlserverName": {
+			"defaultValue": "sqlserver",
+            "type": "string"
+        },
+        "sqlserverAdminLogin": {
+			"defaultValue": "adminDB",
+            "type": "string"
+        },
+        "sqlServerAdminPassword": {
+            "type": "securestring"
+        },
+        "sqldbCollation": {
+            "type": "string",
+            "minLength": 1,
+            "defaultValue": "SQL_Latin1_General_CP1_CS_AS"
+        },
+        "sqldbEdition": {
+            "type": "string",
+            "defaultValue": "Basic",
+            "allowedValues": [
+                "Basic",
+                "Standard",
+                "Premium"
+            ]
+        },
+        "sqldbRequestedServiceObjectiveName": {
+            "type": "string",
+            "defaultValue": "Basic",
+            "allowedValues": [
+                "Basic",
+                "S0",
+                "S1",
+                "S2",
+                "P1",
+                "P2",
+                "P3"
+            ],
+            "metadata": {
+                "description": "Describes the performance level for Edition"
+            }
+        }
+    },
+    "variables": {
+		"environmentPrefix": "[substring(resourceGroup().name, 0, 7)]",
+		"environmentSuffix": "[substring(resourceGroup().name, 6, 6)]",
+		
+        "sqlServerName": "[toLower(concat(variables('environmentPrefix'),parameters('sqlServerName'),variables('environmentSuffix')))]",
+        "sqlDbName": "[toLower(concat(variables('environmentPrefix'),parameters('sqlDbName'),variables('environmentSuffix')))]"
+    },
+    "resources": [
+        {
+            "name": "[variables('sqlServerName')]",
+            "type": "Microsoft.Sql/servers",
+            "location": "[parameters('location')]",
+            "apiVersion": "2014-04-01-preview",
+            "dependsOn": [],
+            "properties": {
+                "administratorLogin": "[parameters('sqlserverAdminLogin')]",
+                "administratorLoginPassword": "[parameters('sqlServerAdminPassword')]"
+            },
+            "resources": [		
+			{
+				"name": "[variables('sqlDbName')]",
+				"type": "databases",
+				"location": "[parameters('location')]",
+				"apiVersion": "2014-04-01-preview",
+				"dependsOn": [
+					"[resourceId('Microsoft.Sql/servers',variables('sqlServerName'))]"
+				],
+		 
+				"properties": {
+					"collation": "[parameters('sqldbCollation')]",
+					"edition": "[parameters('sqldbEdition')]",
+					"requestedServiceObjectiveName": "[parameters('sqldbRequestedServiceObjectiveName')]"
+				}
+			},
+			        {
+          "name": "AllowAllMicrosoftAzureIps",
+          "type": "firewallrules",
+          "apiVersion": "2014-04-01",
+          "location": "[parameters('location')]",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          },
+          "dependsOn": [
+					"[resourceId('Microsoft.Sql/servers',variables('sqlServerName'))]"
+          ]
+        }]
+
+	}
+    ],
+    "outputs": {
+        "sqlserver.qualified.name": {
+            "type": "string",
+            "value": "[reference(variables('sqlServerName')).fullyQualifiedDomainName]"
+        },
+        "sqlserver.name": {
+            "type": "string",
+            "value": "[variables('sqlServerName')]"
+        },
+        "Sonar.sqldb.name": {
+            "type": "string",
+            "value": "[variables('sqlDbName')]"
+        }
+    }
+}
