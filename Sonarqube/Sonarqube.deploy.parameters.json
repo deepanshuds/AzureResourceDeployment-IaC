@@ -5,8 +5,8 @@
       "environmentConfiguration": {
           "value": {
               "prefix": {
-                  "hostingPlanName": "SonarQubeEcolabOIP3445-pp",
-                  "siteName":"SonarQubeEcolabOIP3446-pp"
+                  "hostingPlanName": "SonarQubepp",
+                  "siteName":"SonarQubepp"
               }
            }
        }
